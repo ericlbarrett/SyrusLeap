@@ -29,7 +29,7 @@ namespace SyrusLeapClient {
 
             // Hook up handlers for the watcher events before starting the watcher
             deviceWatcher.Added += new TypedEventHandler<DeviceWatcher, DeviceInformation>(async (watcher, deviceInfo) => {
-                System.Diagnostics.Debug.WriteLine("Found " + deviceInfo.Name);
+                System.Diagnostics.Debug.WriteLine("Found " + deviceInfo.Name + " " + deviceInfo.Id);
             });
 
             deviceWatcher.Updated += new TypedEventHandler<DeviceWatcher, DeviceInformationUpdate>(async (watcher, deviceInfoUpdate) => {
