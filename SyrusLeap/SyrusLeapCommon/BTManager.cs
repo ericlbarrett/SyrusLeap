@@ -4,6 +4,9 @@ using Windows.Storage.Streams;
 
 namespace SyrusLeapCommon
 {
+
+    // The packet format
+    // This class gets serialized and sent over the BT connection
     public struct SyrusPacket {
         public byte id, n;
         public byte[] data;

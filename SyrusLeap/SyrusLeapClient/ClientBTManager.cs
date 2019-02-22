@@ -8,6 +8,8 @@ using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.Rfcomm;
 using Windows.Devices.Enumeration;
 using Windows.Foundation;
+using Windows.Networking.Sockets;
+using Windows.Storage.Streams;
 
 namespace SyrusLeapClient {
     class ClientBTManager : BTManager {
@@ -28,8 +30,10 @@ namespace SyrusLeapClient {
                                                             DeviceInformationKind.AssociationEndpoint);
 
             // Hook up handlers for the watcher events before starting the watcher
+            // TODO: These would preferably be split into dedicated functions + we might not need all of these.
             deviceWatcher.Added += new TypedEventHandler<DeviceWatcher, DeviceInformation>(async (watcher, deviceInfo) => {
                 System.Diagnostics.Debug.WriteLine("Found " + deviceInfo.Name + " " + deviceInfo.Id);
+                Connect(deviceInfo);
             });
 
             deviceWatcher.Updated += new TypedEventHandler<DeviceWatcher, DeviceInformationUpdate>(async (watcher, deviceInfoUpdate) => {
@@ -53,41 +57,36 @@ namespace SyrusLeapClient {
             deviceWatcher.Start();
         }
 
-        private async void Connect(DeviceInformation devInfo) {
-
+        private void StopWatcher(){
+            if (null != deviceWatcher) {
+                if ((DeviceWatcherStatus.Started == deviceWatcher.Status ||
+                     DeviceWatcherStatus.EnumerationCompleted == deviceWatcher.Status)) {
+                    deviceWatcher.Stop();
+                }
+                deviceWatcher = null;
+            }
         }
 
-        /*private async void ConnectButton_Click(object sender, RoutedEventArgs e) {
-            // Make sure user has selected a device first
-            if (resultsListView.SelectedItem != null) {
-                rootPage.NotifyUser("Connecting to remote device. Please wait...", NotifyType.StatusMessage);
-            } else {
-                rootPage.NotifyUser("Please select an item to connect to", NotifyType.ErrorMessage);
-                return;
-            }
-
-            RfcommChatDeviceDisplay deviceInfoDisp = resultsListView.SelectedItem as RfcommChatDeviceDisplay;
-
+        private async void Connect(DeviceInformation devInfo) {
             // Perform device access checks before trying to get the device.
             // First, we check if consent has been explicitly denied by the user.
-            DeviceAccessStatus accessStatus = DeviceAccessInformation.CreateFromId(deviceInfoDisp.Id).CurrentStatus;
+            DeviceAccessStatus accessStatus = DeviceAccessInformation.CreateFromId(devInfo.Id).CurrentStatus;
             if (accessStatus == DeviceAccessStatus.DeniedByUser) {
-                rootPage.NotifyUser("This app does not have access to connect to the remote device (please grant access in Settings > Privacy > Other Devices", NotifyType.ErrorMessage);
+                System.Diagnostics.Debug.WriteLine("This app does not have access to connect to the remote device (please grant access in Settings > Privacy > Other Devices");
                 return;
             }
             // If not, try to get the Bluetooth device
             try {
-                bluetoothDevice = await BluetoothDevice.FromIdAsync(deviceInfoDisp.Id);
+                bluetoothDevice = await BluetoothDevice.FromIdAsync(devInfo.Id);
             } catch (Exception ex) {
-                rootPage.NotifyUser(ex.Message, NotifyType.ErrorMessage);
-                ResetMainUI();
+                System.Diagnostics.Debug.WriteLine("Error 1");
                 return;
             }
             // If we were unable to get a valid Bluetooth device object,
             // it's most likely because the user has specified that all unpaired devices
             // should not be interacted with.
             if (bluetoothDevice == null) {
-                rootPage.NotifyUser("Bluetooth Device returned null. Access Status = " + accessStatus.ToString(), NotifyType.ErrorMessage);
+                System.Diagnostics.Debug.WriteLine("Bluetooth Device returned null. Access Status = " + accessStatus.ToString());
             }
 
             // This should return a list of uncached Bluetooth services (so if the server was not active when paired, it will still be detected by this call
@@ -97,62 +96,51 @@ namespace SyrusLeapClient {
             if (rfcommServices.Services.Count > 0) {
                 chatService = rfcommServices.Services[0];
             } else {
-                rootPage.NotifyUser(
-                   "Could not discover the chat service on the remote device",
-                   NotifyType.StatusMessage);
-                ResetMainUI();
+
+                System.Diagnostics.Debug.WriteLine("Could not discover the chat service on the remote device");
                 return;
             }
 
             // Do various checks of the SDP record to make sure you are talking to a device that actually supports the Bluetooth Rfcomm Chat Service
             var attributes = await chatService.GetSdpRawAttributesAsync();
             if (!attributes.ContainsKey(Constants.SdpServiceNameAttributeId)) {
-                rootPage.NotifyUser(
+                System.Diagnostics.Debug.WriteLine(
                     "The Chat service is not advertising the Service Name attribute (attribute id=0x100). " +
-                    "Please verify that you are running the BluetoothRfcommChat server.",
-                    NotifyType.ErrorMessage);
-                ResetMainUI();
+                    "Please verify that you are running the BluetoothRfcommChat server.");
                 return;
             }
             var attributeReader = DataReader.FromBuffer(attributes[Constants.SdpServiceNameAttributeId]);
             var attributeType = attributeReader.ReadByte();
             if (attributeType != Constants.SdpServiceNameAttributeType) {
-                rootPage.NotifyUser(
+                System.Diagnostics.Debug.WriteLine(
                     "The Chat service is using an unexpected format for the Service Name attribute. " +
-                    "Please verify that you are running the BluetoothRfcommChat server.",
-                    NotifyType.ErrorMessage);
-                ResetMainUI();
+                    "Please verify that you are running the BluetoothRfcommChat server.");
                 return;
             }
             var serviceNameLength = attributeReader.ReadByte();
 
             // The Service Name attribute requires UTF-8 encoding.
-            attributeReader.UnicodeEncoding = UnicodeEncoding.Utf8;
+            attributeReader.UnicodeEncoding = Windows.Storage.Streams.UnicodeEncoding.Utf8;
 
             StopWatcher();
 
             lock (this) {
-                chatSocket = new StreamSocket();
+                socket = new StreamSocket();
             }
             try {
-                await chatSocket.ConnectAsync(chatService.ConnectionHostName, chatService.ConnectionServiceName);
+                await socket.ConnectAsync(chatService.ConnectionHostName, chatService.ConnectionServiceName);
+                
+                writer = new DataWriter(socket.OutputStream);
 
-                SetChatUI(attributeReader.ReadString(serviceNameLength), bluetoothDevice.Name);
-                chatWriter = new DataWriter(chatSocket.OutputStream);
-
-                DataReader chatReader = new DataReader(chatSocket.InputStream);
-                ReceiveStringLoop(chatReader);
+                DataReader chatReader = new DataReader(socket.InputStream);
+                //ReceiveStringLoop(chatReader);
             } catch (Exception ex) when ((uint)ex.HResult == 0x80070490) // ERROR_ELEMENT_NOT_FOUND
               {
-                rootPage.NotifyUser("Please verify that you are running the BluetoothRfcommChat server.", NotifyType.ErrorMessage);
-                ResetMainUI();
+                System.Diagnostics.Debug.WriteLine("Please verify that you are running the BluetoothRfcommChat server.");
             } catch (Exception ex) when ((uint)ex.HResult == 0x80072740) // WSAEADDRINUSE
               {
-                rootPage.NotifyUser("Please verify that there is no other RFCOMM connection to the same device.", NotifyType.ErrorMessage);
-                ResetMainUI();
+                System.Diagnostics.Debug.WriteLine("Please verify that there is no other RFCOMM connection to the same device.");
             }
         }
-
-        */
     }
 }
