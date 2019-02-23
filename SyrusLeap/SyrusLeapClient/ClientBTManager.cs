@@ -18,7 +18,7 @@ namespace SyrusLeapClient {
         private RfcommDeviceService chatService = null;
         private BluetoothDevice bluetoothDevice;
 
-        public override void Initialize() {
+        public override async void Initialize() {
             System.Diagnostics.Debug.WriteLine("Initializing ClientBTManager");
 
 
@@ -67,14 +67,30 @@ namespace SyrusLeapClient {
             }
         }
 
+        private async void ReceiveStringLoop(DataReader chatReader) {
+            ReceiveStringLoop(chatReader);
+
+        }
+
         private async void Connect(DeviceInformation devInfo) {
             // Perform device access checks before trying to get the device.
             // First, we check if consent has been explicitly denied by the user.
             DeviceAccessStatus accessStatus = DeviceAccessInformation.CreateFromId(devInfo.Id).CurrentStatus;
-            if (accessStatus == DeviceAccessStatus.DeniedByUser) {
+            if (accessStatus != DeviceAccessStatus.Allowed) {
                 System.Diagnostics.Debug.WriteLine("This app does not have access to connect to the remote device (please grant access in Settings > Privacy > Other Devices");
-                return;
+                //return;
             }
+
+            if (!devInfo.Pairing.IsPaired) {
+                System.Diagnostics.Debug.WriteLine("Attempting to pair");
+
+                DevicePairingResult result = await devInfo.Pairing.PairAsync();
+
+                System.Diagnostics.Debug.WriteLine("Pair Status: " + result.Status);
+            } else {
+                System.Diagnostics.Debug.WriteLine("Already paired");
+            }
+
             // If not, try to get the Bluetooth device
             try {
                 bluetoothDevice = await BluetoothDevice.FromIdAsync(devInfo.Id);
@@ -96,7 +112,6 @@ namespace SyrusLeapClient {
             if (rfcommServices.Services.Count > 0) {
                 chatService = rfcommServices.Services[0];
             } else {
-
                 System.Diagnostics.Debug.WriteLine("Could not discover the chat service on the remote device");
                 return;
             }
@@ -133,7 +148,7 @@ namespace SyrusLeapClient {
                 writer = new DataWriter(socket.OutputStream);
 
                 DataReader chatReader = new DataReader(socket.InputStream);
-                //ReceiveStringLoop(chatReader);
+                ReceiveStringLoop(chatReader);
             } catch (Exception ex) when ((uint)ex.HResult == 0x80070490) // ERROR_ELEMENT_NOT_FOUND
               {
                 System.Diagnostics.Debug.WriteLine("Please verify that you are running the BluetoothRfcommChat server.");
