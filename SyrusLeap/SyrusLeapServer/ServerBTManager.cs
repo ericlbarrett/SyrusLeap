@@ -66,6 +66,7 @@ namespace SyrusLeapServer {
 
         private async void OnConnectionReceived(
             StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args) {
+            System.Diagnostics.Debug.WriteLine("Connected to client");
             // Don't need the listener anymore
             socketListener.Dispose();
             socketListener = null;
