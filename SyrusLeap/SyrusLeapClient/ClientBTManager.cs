@@ -33,7 +33,11 @@ namespace SyrusLeapClient {
             // TODO: These would preferably be split into dedicated functions + we might not need all of these.
             deviceWatcher.Added += new TypedEventHandler<DeviceWatcher, DeviceInformation>(async (watcher, deviceInfo) => {
                 System.Diagnostics.Debug.WriteLine("Found " + deviceInfo.Name + " " + deviceInfo.Id);
-                Connect(deviceInfo);
+                if (deviceInfo.Name.StartsWith("DESKTOP")) {
+                    System.Diagnostics.Debug.WriteLine("Attempting to connect");
+                    Connect(deviceInfo);
+                }
+                //
             });
 
             deviceWatcher.Updated += new TypedEventHandler<DeviceWatcher, DeviceInformationUpdate>(async (watcher, deviceInfoUpdate) => {
