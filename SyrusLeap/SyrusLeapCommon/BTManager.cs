@@ -15,15 +15,18 @@ namespace SyrusLeapCommon
 
     public delegate void PacketReceivedHandler(SyrusPacket pak);
     public delegate void ConnectedHandler();
+    public delegate void DisconnectedHandler();
 
     public abstract class BTManager {
         protected StreamSocket socket;
         protected DataWriter writer;
         protected DataReader reader;
         protected BluetoothDevice bluetoothDevice;
+        protected bool isConnected = false;
 
         public event PacketReceivedHandler PacketReceived;
-        public event ConnectedHandler OnConnected;
+        public event ConnectedHandler Connected;
+        public event DisconnectedHandler Disconnected;
 
         public abstract void Initialize();
 
@@ -49,6 +52,18 @@ namespace SyrusLeapCommon
                 writer.WriteByte(Constants.EscCode);
             }
             writer.WriteByte(b);
+        }
+
+        protected void OnConnected() {
+            Connected();
+        }
+
+        protected void OnDisconnected() {
+            Disconnected();
+        }
+
+        protected void OnPacketReceived(SyrusPacket pak) {
+            PacketReceived(pak);
         }
     }
 }

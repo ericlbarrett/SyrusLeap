@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SyrusLeapCommon {
     public class Constants {
-        // The Chat Server's custom service Uuid: 34B1CF4D-1069-4AD6-89B6-E161D79BE4D8
+        // The Server's custom service Uuid: B3CD5D37-5C7F-4059-B741-E292DABCD007
         public static readonly Guid RfcommChatServiceUuid = Guid.Parse("B3CD5D37-5C7F-4059-B741-E292DABCD007"); //Guid.Parse("34B1CF4D-1069-4AD6-89B6-E161D79BE4D8");
 
         // The Id of the Service Name SDP attribute

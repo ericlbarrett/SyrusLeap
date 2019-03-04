@@ -73,7 +73,7 @@ namespace SyrusLeapServer {
             try {
                 socket = args.Socket;
             } catch (Exception e) {
-                System.Diagnostics.Debug.WriteLine("Error 3");
+                System.Diagnostics.Debug.WriteLine("Error: Could not get socket");
                 Disconnect();
                 return;
             }
@@ -83,10 +83,9 @@ namespace SyrusLeapServer {
             writer = new DataWriter(socket.OutputStream);
             reader = new DataReader(socket.InputStream);
             
-
-            System.Diagnostics.Debug.WriteLine("Connected to client");
-
-            //base.OnConnected();
+            System.Diagnostics.Debug.WriteLine("Connected to Client");
+            isConnected = true;
+            OnConnected();
 
             mainLoop();
         }
@@ -135,6 +134,8 @@ namespace SyrusLeapServer {
         }
 
         private void Disconnect() {
+            isConnected = false;
+
             if (rfcommProvider != null) {
                 rfcommProvider.StopAdvertising();
                 rfcommProvider = null;
@@ -154,6 +155,8 @@ namespace SyrusLeapServer {
                 socket.Dispose();
                 socket = null;
             }
+
+            System.Diagnostics.Debug.WriteLine("Disconnected from Client");
 
             Initialize();
         }
