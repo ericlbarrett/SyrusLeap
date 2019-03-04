@@ -1,6 +1,7 @@
 ﻿using System;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
+using Windows.Devices.Bluetooth;
 
 namespace SyrusLeapCommon
 {
@@ -13,16 +14,20 @@ namespace SyrusLeapCommon
     }
 
     public delegate void PacketReceivedHandler(SyrusPacket pak);
+    public delegate void ConnectedHandler();
 
     public abstract class BTManager {
         protected StreamSocket socket;
         protected DataWriter writer;
+        protected DataReader reader;
+        protected BluetoothDevice bluetoothDevice;
 
         public event PacketReceivedHandler PacketReceived;
+        public event ConnectedHandler OnConnected;
 
         public abstract void Initialize();
 
-        public bool SendPacket(SyrusPacket pak) {
+        public async void SendPacket(SyrusPacket pak) {
             writer.WriteByte(Constants.StartCode);
 
             SendByte(pak.id);
@@ -33,8 +38,7 @@ namespace SyrusLeapCommon
             }
 
             writer.WriteByte(Constants.EndCode);
-
-            return true;
+            await writer.StoreAsync();
         }
 
         protected void SendByte(byte b) {

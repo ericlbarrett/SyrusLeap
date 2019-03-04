@@ -14,14 +14,17 @@ using Windows.Storage.Streams;
 namespace SyrusLeapClient {
     class ClientBTManager : BTManager {
 
-        private DeviceWatcher deviceWatcher = null;
-        private RfcommDeviceService chatService = null;
-        private BluetoothDevice bluetoothDevice;
+        private DeviceWatcher deviceWatcher = null; // DeviceWatcher to find the server
+        private RfcommDeviceService service = null; // The service that communication happens on
 
         public override async void Initialize() {
             System.Diagnostics.Debug.WriteLine("Initializing ClientBTManager");
 
+            StartWatcher();
+            System.Diagnostics.Debug.WriteLine("Client Succesfully Initialized.");
+        }
 
+        private async void StartWatcher() {
             // Request additional properties
             string[] requestedProperties = new string[] { "System.Devices.Aep.DeviceAddress", "System.Devices.Aep.IsConnected" };
 
@@ -32,26 +35,16 @@ namespace SyrusLeapClient {
             // Hook up handlers for the watcher events before starting the watcher
             // TODO: These would preferably be split into dedicated functions + we might not need all of these.
             deviceWatcher.Added += new TypedEventHandler<DeviceWatcher, DeviceInformation>(async (watcher, deviceInfo) => {
-                System.Diagnostics.Debug.WriteLine("Found " + deviceInfo.Name + " " + deviceInfo.Id);
-                if (deviceInfo.Name.StartsWith("DESKTOP")) {
-                    System.Diagnostics.Debug.WriteLine("Attempting to connect");
-                    Connect(deviceInfo);
-                }
-                //
-            });
-
-            deviceWatcher.Updated += new TypedEventHandler<DeviceWatcher, DeviceInformationUpdate>(async (watcher, deviceInfoUpdate) => {
-                System.Diagnostics.Debug.WriteLine("DeviceWatcher updated.");
+                System.Diagnostics.Debug.WriteLine("Found Device: " + deviceInfo.Name + " " + deviceInfo.Id);
+                Connect(deviceInfo);
             });
 
             deviceWatcher.EnumerationCompleted += new TypedEventHandler<DeviceWatcher, Object>(async (watcher, obj) => {
                 System.Diagnostics.Debug.WriteLine("Enumeration completed.");
-
             });
 
             deviceWatcher.Removed += new TypedEventHandler<DeviceWatcher, DeviceInformationUpdate>(async (watcher, deviceInfoUpdate) => {
                 System.Diagnostics.Debug.WriteLine("Enumeration completed.");
-
             });
 
             deviceWatcher.Stopped += new TypedEventHandler<DeviceWatcher, Object>(async (watcher, obj) => {
@@ -61,79 +54,65 @@ namespace SyrusLeapClient {
             deviceWatcher.Start();
         }
 
-        private void StopWatcher(){
-            if (null != deviceWatcher) {
-                if ((DeviceWatcherStatus.Started == deviceWatcher.Status ||
-                     DeviceWatcherStatus.EnumerationCompleted == deviceWatcher.Status)) {
-                    deviceWatcher.Stop();
-                }
-                deviceWatcher = null;
-            }
-        }
-
-        private async void ReceiveStringLoop(DataReader chatReader) {
-            ReceiveStringLoop(chatReader);
-
-        }
-
         private async void Connect(DeviceInformation devInfo) {
+            System.Diagnostics.Debug.WriteLine("Attempting to connect");
+
             // Perform device access checks before trying to get the device.
             // First, we check if consent has been explicitly denied by the user.
             DeviceAccessStatus accessStatus = DeviceAccessInformation.CreateFromId(devInfo.Id).CurrentStatus;
             if (accessStatus != DeviceAccessStatus.Allowed) {
+                System.Diagnostics.Debug.WriteLine("Access State: " + accessStatus);
                 System.Diagnostics.Debug.WriteLine("This app does not have access to connect to the remote device (please grant access in Settings > Privacy > Other Devices");
-                //return;
+                return;
             }
 
-            if (!devInfo.Pairing.IsPaired) {
+           /* if (!devInfo.Pairing.IsPaired) {
                 System.Diagnostics.Debug.WriteLine("Attempting to pair");
-
                 DevicePairingResult result = await devInfo.Pairing.PairAsync();
-
                 System.Diagnostics.Debug.WriteLine("Pair Status: " + result.Status);
             } else {
                 System.Diagnostics.Debug.WriteLine("Already paired");
-            }
+            }*/
 
-            // If not, try to get the Bluetooth device
             try {
                 bluetoothDevice = await BluetoothDevice.FromIdAsync(devInfo.Id);
             } catch (Exception ex) {
-                System.Diagnostics.Debug.WriteLine("Error 1");
+                System.Diagnostics.Debug.WriteLine("Error: Couldn't get BluetoothDevice");
                 return;
             }
-            // If we were unable to get a valid Bluetooth device object,
-            // it's most likely because the user has specified that all unpaired devices
-            // should not be interacted with.
+
             if (bluetoothDevice == null) {
                 System.Diagnostics.Debug.WriteLine("Bluetooth Device returned null. Access Status = " + accessStatus.ToString());
             }
 
+            System.Diagnostics.Debug.WriteLine("Getting services...");
+
             // This should return a list of uncached Bluetooth services (so if the server was not active when paired, it will still be detected by this call
             var rfcommServices = await bluetoothDevice.GetRfcommServicesForIdAsync(
-                RfcommServiceId.FromUuid(Constants.RfcommChatServiceUuid), BluetoothCacheMode.Uncached);
+                RfcommServiceId.FromUuid(Constants.RfcommChatServiceUuid), BluetoothCacheMode.Uncached); // Maybe change to cached???
 
             if (rfcommServices.Services.Count > 0) {
-                chatService = rfcommServices.Services[0];
+                service = rfcommServices.Services[0];
             } else {
-                System.Diagnostics.Debug.WriteLine("Could not discover the chat service on the remote device");
+                System.Diagnostics.Debug.WriteLine("Error: Could not discover the chat service on the remote device");
                 return;
             }
 
+
+
+
             // Do various checks of the SDP record to make sure you are talking to a device that actually supports the Bluetooth Rfcomm Chat Service
-            var attributes = await chatService.GetSdpRawAttributesAsync();
+            var attributes = await service.GetSdpRawAttributesAsync();
             if (!attributes.ContainsKey(Constants.SdpServiceNameAttributeId)) {
                 System.Diagnostics.Debug.WriteLine(
-                    "The Chat service is not advertising the Service Name attribute (attribute id=0x100). " +
-                    "Please verify that you are running the BluetoothRfcommChat server.");
+                    "The service is not advertising the Service Name attribute (attribute id=0x100).");
                 return;
             }
             var attributeReader = DataReader.FromBuffer(attributes[Constants.SdpServiceNameAttributeId]);
             var attributeType = attributeReader.ReadByte();
             if (attributeType != Constants.SdpServiceNameAttributeType) {
                 System.Diagnostics.Debug.WriteLine(
-                    "The Chat service is using an unexpected format for the Service Name attribute. " +
-                    "Please verify that you are running the BluetoothRfcommChat server.");
+                    "The Chat service is using an unexpected format for the Service Name attribute. ");
                 return;
             }
             var serviceNameLength = attributeReader.ReadByte();
@@ -147,19 +126,112 @@ namespace SyrusLeapClient {
                 socket = new StreamSocket();
             }
             try {
-                await socket.ConnectAsync(chatService.ConnectionHostName, chatService.ConnectionServiceName);
+                await socket.ConnectAsync(service.ConnectionHostName, service.ConnectionServiceName);
                 
                 writer = new DataWriter(socket.OutputStream);
+                reader = new DataReader(socket.InputStream);
 
-                DataReader chatReader = new DataReader(socket.InputStream);
-                ReceiveStringLoop(chatReader);
-            } catch (Exception ex) when ((uint)ex.HResult == 0x80070490) // ERROR_ELEMENT_NOT_FOUND
-              {
+                System.Diagnostics.Debug.WriteLine("Connected Succesfully");
+
+                //ReceiveStringLoop(reader);
+                mainLoop();
+            } catch (Exception ex) when ((uint)ex.HResult == 0x80070490) {// ERROR_ELEMENT_NOT_FOUND
                 System.Diagnostics.Debug.WriteLine("Please verify that you are running the BluetoothRfcommChat server.");
-            } catch (Exception ex) when ((uint)ex.HResult == 0x80072740) // WSAEADDRINUSE
-              {
+            } catch (Exception ex) when ((uint)ex.HResult == 0x80072740) { // WSAEADDRINUSE
                 System.Diagnostics.Debug.WriteLine("Please verify that there is no other RFCOMM connection to the same device.");
             }
         }
+
+        private async void mainLoop() {
+            while (true) {
+                try {
+                    uint size = await reader.LoadAsync(sizeof(byte));
+                    if (size < sizeof(byte)) {
+                        Disconnect("Remote device terminated connection - make sure only one instance of server is running on remote device");
+                        return;
+                    }
+
+                    System.Diagnostics.Debug.WriteLine("Recieved: " + (int)reader.ReadByte());
+
+                } catch (Exception ex) {
+                    lock (this) {
+                        if (socket == null) {
+                            // Do not print anything here -  the user closed the socket.
+                            if ((uint)ex.HResult == 0x80072745)
+                                System.Diagnostics.Debug.WriteLine("Disconnect triggered by remote device");
+                            else if ((uint)ex.HResult == 0x800703E3)
+                                System.Diagnostics.Debug.WriteLine("The I/O operation has been aborted because of either a thread exit or an application request.");
+                        } else {
+                            Disconnect("Read stream failed with error: " + ex.Message);
+                        }
+                    }
+                }
+
+            }
+        }
+
+        private async void ReceiveStringLoop(DataReader chatReader) {
+            try {
+                uint size = await chatReader.LoadAsync(sizeof(uint));
+                if (size < sizeof(uint)) {
+                    Disconnect("Remote device terminated connection - make sure only one instance of server is running on remote device");
+                    return;
+                }
+
+                uint stringLength = chatReader.ReadUInt32();
+                uint actualStringLength = await chatReader.LoadAsync(stringLength);
+                if (actualStringLength != stringLength) {
+                    // The underlying socket was closed before we were able to read the whole data
+                    return;
+                }
+
+                System.Diagnostics.Debug.WriteLine("Received: " + chatReader.ReadString(stringLength));
+
+                ReceiveStringLoop(chatReader);
+            } catch (Exception ex) {
+                lock (this) {
+                    if (socket == null) {
+                        // Do not print anything here -  the user closed the socket.
+                        if ((uint)ex.HResult == 0x80072745)
+                            System.Diagnostics.Debug.WriteLine("Disconnect triggered by remote device");
+                        else if ((uint)ex.HResult == 0x800703E3)
+                            System.Diagnostics.Debug.WriteLine("The I/O operation has been aborted because of either a thread exit or an application request.");
+                    } else {
+                        Disconnect("Read stream failed with error: " + ex.Message);
+                    }
+                }
+            }
+
+        }
+
+        private void StopWatcher(){
+            if (deviceWatcher != null) {
+                if (deviceWatcher.Status == DeviceWatcherStatus.Started ||
+                     deviceWatcher.Status == DeviceWatcherStatus.EnumerationCompleted) {
+                    deviceWatcher.Stop();
+                }
+                deviceWatcher = null;
+            }
+        }
+
+        private void Disconnect(string disconnectReason) {
+            if (writer != null) {
+                writer.DetachStream();
+                writer = null;
+            }
+
+            if (service != null) {
+                service.Dispose();
+                service = null;
+            }
+            lock (this) {
+                if (socket != null) {
+                    socket.Dispose();
+                    socket = null;
+                }
+            }
+
+            System.Diagnostics.Debug.WriteLine("Disconnected:" + disconnectReason);
+        }        
     }
 }

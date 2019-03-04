@@ -16,20 +16,20 @@ namespace SyrusLeapServer {
         private StreamSocketListener socketListener;
 
         public override async void Initialize() {
+            System.Diagnostics.Debug.WriteLine("Initializing the Server.");
+
+
             try {
                 rfcommProvider = await RfcommServiceProvider.CreateAsync(RfcommServiceId.FromUuid(Constants.RfcommChatServiceUuid));
             } // Catch exception HRESULT_FROM_WIN32(ERROR_DEVICE_NOT_AVAILABLE).
-            catch (Exception ex) when ((uint)ex.HResult == 0x800710DF) {
-                // The Bluetooth radio may be off.
-                // TODO: Error managing
-                System.Diagnostics.Debug.WriteLine("Error 1");
+            catch (Exception ex) when ((uint)ex.HResult == 0x800710DF) { // The Bluetooth radio may be off.
+                System.Diagnostics.Debug.WriteLine("Could not initialize RfcommServiceProvider");
                 return;
             }
 
             // Create a listener for this service and start listening
             socketListener = new StreamSocketListener();
             socketListener.ConnectionReceived += OnConnectionReceived;
-            var rfcomm = rfcommProvider.ServiceId.AsString();
 
             await socketListener.BindServiceNameAsync(rfcommProvider.ServiceId.AsString(),
                 SocketProtectionLevel.BluetoothEncryptionAllowNullAuthentication);
@@ -41,10 +41,11 @@ namespace SyrusLeapServer {
                 rfcommProvider.StartAdvertising(socketListener, true);
             } catch (Exception e) {
                 // If you aren't able to get a reference to an RfcommServiceProvider, tell the user why.  Usually throws an exception if user changed their privacy settings to prevent Sync w/ Devices.  
-                // TODO: Error managing
-                System.Diagnostics.Debug.WriteLine("Error 2");
+                System.Diagnostics.Debug.WriteLine("Could not start advertising");
                 return;
             }
+
+            System.Diagnostics.Debug.WriteLine("Server Succesfully Initialized.");
         }
 
         private void InitializeServiceSdpAttributes(RfcommServiceProvider rfcommProvider) {
@@ -64,9 +65,7 @@ namespace SyrusLeapServer {
             rfcommProvider.SdpRawAttributes.Add(Constants.SdpServiceNameAttributeId, sdpWriter.DetachBuffer());
         }
 
-        private async void OnConnectionReceived(
-            StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args) {
-            System.Diagnostics.Debug.WriteLine("Connected to client");
+        private async void OnConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args) {
             // Don't need the listener anymore
             socketListener.Dispose();
             socketListener = null;
@@ -79,16 +78,20 @@ namespace SyrusLeapServer {
                 return;
             }
 
-            // Note - this is the supported way to get a Bluetooth device from a given socket
-            var remoteDevice = await BluetoothDevice.FromHostNameAsync(socket.Information.RemoteHostName);
+            bluetoothDevice = await BluetoothDevice.FromHostNameAsync(socket.Information.RemoteHostName);
 
             writer = new DataWriter(socket.OutputStream);
-            var reader = new DataReader(socket.InputStream);
-            bool remoteDisconnection = false;
+            reader = new DataReader(socket.InputStream);
+            
 
             System.Diagnostics.Debug.WriteLine("Connected to client");
+            
+            mainLoop();
+        }
 
-            // Infinite read buffer loop
+        private async void mainLoop() {
+            bool remoteDisconnection = false;
+
             while (true) {
                 try {
                     // Based on the protocol we've defined, the first uint is the size of the message
@@ -111,10 +114,11 @@ namespace SyrusLeapServer {
                     }
                     string message = reader.ReadString(currentLength);
 
+                    System.Diagnostics.Debug.WriteLine("Recieved: " + message);
                 }
                 // Catch exception HRESULT_FROM_WIN32(ERROR_OPERATION_ABORTED).
                 catch (Exception ex) when ((uint)ex.HResult == 0x800703E3) {
-                    System.Diagnostics.Debug.WriteLine("Client Disconnected");
+                    System.Diagnostics.Debug.WriteLine("Client Disconnected Successfully");
                     break;
                 }
             }
@@ -146,6 +150,8 @@ namespace SyrusLeapServer {
                 socket.Dispose();
                 socket = null;
             }
+
+            Initialize();
         }
 
     }
