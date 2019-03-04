@@ -85,7 +85,9 @@ namespace SyrusLeapServer {
             
 
             System.Diagnostics.Debug.WriteLine("Connected to client");
-            
+
+            //base.OnConnected();
+
             mainLoop();
         }
 
@@ -95,7 +97,9 @@ namespace SyrusLeapServer {
             while (true) {
                 try {
                     // Based on the protocol we've defined, the first uint is the size of the message
+                    System.Diagnostics.Debug.WriteLine("Before");
                     uint readLength = await reader.LoadAsync(sizeof(uint));
+                    System.Diagnostics.Debug.WriteLine("After");
 
                     // Check if the size of the data is expected (otherwise the remote has already terminated the connection)
                     if (readLength < sizeof(uint)) {

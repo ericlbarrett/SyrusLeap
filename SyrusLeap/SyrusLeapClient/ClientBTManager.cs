@@ -134,7 +134,7 @@ namespace SyrusLeapClient {
                 System.Diagnostics.Debug.WriteLine("Connected Succesfully");
 
                 //ReceiveStringLoop(reader);
-                mainLoop();
+                //mainLoop();
             } catch (Exception ex) when ((uint)ex.HResult == 0x80070490) {// ERROR_ELEMENT_NOT_FOUND
                 System.Diagnostics.Debug.WriteLine("Please verify that you are running the BluetoothRfcommChat server.");
             } catch (Exception ex) when ((uint)ex.HResult == 0x80072740) { // WSAEADDRINUSE
@@ -145,13 +145,20 @@ namespace SyrusLeapClient {
         private async void mainLoop() {
             while (true) {
                 try {
-                    uint size = await reader.LoadAsync(sizeof(byte));
-                    if (size < sizeof(byte)) {
+                    uint size = await reader.LoadAsync(4 * sizeof(byte));
+                    if (size < 4 * sizeof(byte)) {
                         Disconnect("Remote device terminated connection - make sure only one instance of server is running on remote device");
                         return;
                     }
 
-                    System.Diagnostics.Debug.WriteLine("Recieved: " + (int)reader.ReadByte());
+                    byte[] thing = new byte[4];
+                    reader.ReadBytes(thing);
+
+                    foreach (byte b in thing) {
+                        System.Diagnostics.Debug.WriteLine((int)b);
+                    }
+
+                    //System.Diagnostics.Debug.WriteLine("Recieved: " + (int)reader.ReadByte());
 
                 } catch (Exception ex) {
                     lock (this) {

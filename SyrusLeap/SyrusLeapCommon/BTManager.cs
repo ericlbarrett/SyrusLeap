@@ -33,9 +33,12 @@ namespace SyrusLeapCommon
             SendByte(pak.id);
             SendByte(pak.n);
 
-            foreach (byte b in pak.data) {
-                SendByte(b);
+            if (pak.data != null) {
+                foreach (byte b in pak.data) {
+                    SendByte(b);
+                }
             }
+            
 
             writer.WriteByte(Constants.EndCode);
             await writer.StoreAsync();

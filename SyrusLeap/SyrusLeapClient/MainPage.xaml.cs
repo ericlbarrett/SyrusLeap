@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SyrusLeapCommon;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -32,6 +33,15 @@ namespace SyrusLeapClient
         protected override void OnNavigatedTo(NavigationEventArgs e) {
             cbm = new ClientBTManager();
             cbm.Initialize();
+        }
+
+        private void SendBtn_Click(object sender, RoutedEventArgs e) {
+            SyrusPacket pak = new SyrusPacket();
+
+            pak.id = 23;
+            pak.n = 0;
+
+            cbm.SendPacket(pak);
         }
     }
 }
