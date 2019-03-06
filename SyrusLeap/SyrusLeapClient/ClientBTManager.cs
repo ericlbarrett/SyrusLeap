@@ -112,8 +112,7 @@ namespace SyrusLeapClient {
 
             lock (this) {
                 socket = new StreamSocket();
-            }
-            try {
+            } try {
                 await socket.ConnectAsync(service.ConnectionHostName, service.ConnectionServiceName);
                 
                 writer = new DataWriter(socket.OutputStream);
@@ -158,6 +157,7 @@ namespace SyrusLeapClient {
                             index = -1;
                         } else if (b == Constants.EscCode) {
                             escaped = true;
+                            index--;
                         } else if (index == 1) {
                             packet.id = b;
                         } else if (index == 2) {

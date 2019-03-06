@@ -116,6 +116,7 @@ namespace SyrusLeapServer {
                             index = -1;
                         } else if (b == Constants.EscCode) {
                             escaped = true;
+                            index--;
                         } else if (index == 1) {
                             packet.id = b;
                         } else if (index == 2) {
