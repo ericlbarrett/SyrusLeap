@@ -132,20 +132,53 @@ namespace SyrusLeapClient {
         }
 
         private async void mainLoop() {
+            bool escaped = false;
+            int index = -1;
+            SyrusPacket packet = new SyrusPacket();
+
             while (true) {
                 try {
-                    uint size = await reader.LoadAsync(4 * sizeof(byte));
-                    if (size < 4 * sizeof(byte)) {
+                    uint size = await reader.LoadAsync(sizeof(byte));
+                    if (size < sizeof(byte)) {
                         Disconnect("Remote device terminated connection - make sure only one instance of server is running on remote device");
                         return;
                     }
 
-                    byte[] thing = new byte[4];
-                    reader.ReadBytes(thing);
+                    byte b = reader.ReadByte();
 
-                    foreach (byte b in thing) {
-                        System.Diagnostics.Debug.WriteLine((int)b);
+                    if (!escaped) {
+                        if (b == Constants.StartCode) {
+                            index = 0;
+                            packet = new SyrusPacket();
+                        } else if (b == Constants.EndCode) {
+                            // Check if the data matches what the packet said
+                            if (index >= 2 && packet.n == index - 2) {
+                                OnPacketReceived(packet);
+                            }
+                            index = -1;
+                        } else if (b == Constants.EscCode) {
+                            escaped = true;
+                        } else if (index == 1) {
+                            packet.id = b;
+                        } else if (index == 2) {
+                            packet.n = b;
+                            packet.data = new byte[b];
+                        } else if (index > 2) {
+                            packet.data[index - 3] = b;
+                        }
+                    } else {
+                        if (index == 1) {
+                            packet.id = b;
+                        } else if (index == 2) {
+                            packet.n = b;
+                            packet.data = new byte[b];
+                        } else if (index > 2) {
+                            packet.data[index - 3] = b;
+                        }
+                        escaped = false;
                     }
+                    
+                    if (index >= 0) index++;
 
                 } catch (Exception ex) {
                     lock (this) {
@@ -162,40 +195,6 @@ namespace SyrusLeapClient {
                 }
 
             }
-        }
-
-        private async void ReceiveStringLoop(DataReader chatReader) {
-            try {
-                uint size = await chatReader.LoadAsync(sizeof(uint));
-                if (size < sizeof(uint)) {
-                    Disconnect("Remote device terminated connection - make sure only one instance of server is running on remote device");
-                    return;
-                }
-
-                uint stringLength = chatReader.ReadUInt32();
-                uint actualStringLength = await chatReader.LoadAsync(stringLength);
-                if (actualStringLength != stringLength) {
-                    // The underlying socket was closed before we were able to read the whole data
-                    return;
-                }
-
-                System.Diagnostics.Debug.WriteLine("Received: " + chatReader.ReadString(stringLength));
-
-                ReceiveStringLoop(chatReader);
-            } catch (Exception ex) {
-                lock (this) {
-                    if (socket == null) {
-                        // Do not print anything here -  the user closed the socket.
-                        if ((uint)ex.HResult == 0x80072745)
-                            System.Diagnostics.Debug.WriteLine("Disconnect triggered by remote device");
-                        else if ((uint)ex.HResult == 0x800703E3)
-                            System.Diagnostics.Debug.WriteLine("The I/O operation has been aborted because of either a thread exit or an application request.");
-                    } else {
-                        Disconnect("Read stream failed with error: " + ex.Message);
-                    }
-                }
-            }
-
         }
 
         private void StopWatcher(){

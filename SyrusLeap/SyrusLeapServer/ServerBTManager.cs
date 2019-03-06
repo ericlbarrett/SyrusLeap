@@ -91,33 +91,15 @@ namespace SyrusLeapServer {
         }
 
         private async void mainLoop() {
-            bool remoteDisconnection = false;
-
             while (true) {
                 try {
-                    // Based on the protocol we've defined, the first uint is the size of the message
-                    System.Diagnostics.Debug.WriteLine("Before");
-                    uint readLength = await reader.LoadAsync(sizeof(uint));
-                    System.Diagnostics.Debug.WriteLine("After");
-
-                    // Check if the size of the data is expected (otherwise the remote has already terminated the connection)
-                    if (readLength < sizeof(uint)) {
-                        remoteDisconnection = true;
-                        break;
+                    uint size = await reader.LoadAsync(sizeof(byte));
+                    if (size < sizeof(byte)) {
+                        reader.DetachStream(); // If something isn't working revert this
+                        Disconnect();
+                        System.Diagnostics.Debug.WriteLine("Client Disconnected");
+                        return;
                     }
-                    uint currentLength = reader.ReadUInt32();
-
-                    // Load the rest of the message since you already know the length of the data expected.  
-                    readLength = await reader.LoadAsync(currentLength);
-
-                    // Check if the size of the data is expected (otherwise the remote has already terminated the connection)
-                    if (readLength < currentLength) {
-                        remoteDisconnection = true;
-                        break;
-                    }
-                    string message = reader.ReadString(currentLength);
-
-                    System.Diagnostics.Debug.WriteLine("Recieved: " + message);
                 }
                 // Catch exception HRESULT_FROM_WIN32(ERROR_OPERATION_ABORTED).
                 catch (Exception ex) when ((uint)ex.HResult == 0x800703E3) {
@@ -127,10 +109,6 @@ namespace SyrusLeapServer {
             }
 
             reader.DetachStream();
-            if (remoteDisconnection) {
-                Disconnect();
-                System.Diagnostics.Debug.WriteLine("Client Disconnected");
-            }
         }
 
         private void Disconnect() {

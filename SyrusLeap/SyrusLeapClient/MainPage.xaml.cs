@@ -32,7 +32,9 @@ namespace SyrusLeapClient
 
         protected override void OnNavigatedTo(NavigationEventArgs e) {
             cbm = new ClientBTManager();
+            cbm.PacketReceived += Recieved;
             cbm.Initialize();
+
         }
 
         private void SendBtn_Click(object sender, RoutedEventArgs e) {
@@ -42,6 +44,10 @@ namespace SyrusLeapClient
             pak.n = 0;
 
             cbm.SendPacket(pak);
+        }
+
+        private void Recieved(SyrusPacket packet) {
+            
         }
     }
 }
