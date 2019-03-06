@@ -18,7 +18,6 @@ namespace SyrusLeapServer {
         public override async void Initialize() {
             System.Diagnostics.Debug.WriteLine("Initializing the Server.");
 
-
             try {
                 rfcommProvider = await RfcommServiceProvider.CreateAsync(RfcommServiceId.FromUuid(Constants.RfcommChatServiceUuid));
             } // Catch exception HRESULT_FROM_WIN32(ERROR_DEVICE_NOT_AVAILABLE).
@@ -91,15 +90,54 @@ namespace SyrusLeapServer {
         }
 
         private async void mainLoop() {
+            bool escaped = false;
+            int index = -1;
+            SyrusPacket packet = new SyrusPacket();
+
             while (true) {
                 try {
                     uint size = await reader.LoadAsync(sizeof(byte));
                     if (size < sizeof(byte)) {
-                        reader.DetachStream(); // If something isn't working revert this
-                        Disconnect();
                         System.Diagnostics.Debug.WriteLine("Client Disconnected");
-                        return;
+                        break;
                     }
+
+                    byte b = reader.ReadByte();
+
+                    if (!escaped) {
+                        if (b == Constants.StartCode) {
+                            index = 0;
+                            packet = new SyrusPacket();
+                        } else if (b == Constants.EndCode) {
+                            // Check if the data matches what the packet said
+                            if (index >= 2 && packet.n == index - 2) {
+                                OnPacketReceived(packet);
+                            }
+                            index = -1;
+                        } else if (b == Constants.EscCode) {
+                            escaped = true;
+                        } else if (index == 1) {
+                            packet.id = b;
+                        } else if (index == 2) {
+                            packet.n = b;
+                            packet.data = new byte[b];
+                        } else if (index > 2) {
+                            packet.data[index - 3] = b;
+                        }
+                    } else {
+                        if (index == 1) {
+                            packet.id = b;
+                        } else if (index == 2) {
+                            packet.n = b;
+                            packet.data = new byte[b];
+                        } else if (index > 2) {
+                            packet.data[index - 3] = b;
+                        }
+                        escaped = false;
+                    }
+                    
+                    if (index >= 0) index++;
+
                 }
                 // Catch exception HRESULT_FROM_WIN32(ERROR_OPERATION_ABORTED).
                 catch (Exception ex) when ((uint)ex.HResult == 0x800703E3) {
@@ -108,7 +146,7 @@ namespace SyrusLeapServer {
                 }
             }
 
-            reader.DetachStream();
+            Disconnect();
         }
 
         private void Disconnect() {
@@ -129,12 +167,23 @@ namespace SyrusLeapServer {
                 writer = null;
             }
 
+            if (reader != null) {
+                reader.DetachStream();
+                reader = null;
+            }
+
             if (socket != null) {
                 socket.Dispose();
                 socket = null;
             }
 
+            if (bluetoothDevice != null) {
+                //bluetoothDevice.Close();
+                bluetoothDevice = null;
+            }
+
             System.Diagnostics.Debug.WriteLine("Disconnected from Client");
+            OnDisconnected();
 
             Initialize();
         }

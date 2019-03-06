@@ -19,7 +19,6 @@ namespace SyrusLeapClient {
 
         public override async void Initialize() {
             System.Diagnostics.Debug.WriteLine("Initializing ClientBTManager");
-
             StartWatcher();
             System.Diagnostics.Debug.WriteLine("Client Succesfully Initialized.");
         }
@@ -36,6 +35,7 @@ namespace SyrusLeapClient {
             // TODO: These would preferably be split into dedicated functions + we might not need all of these.
             deviceWatcher.Added += new TypedEventHandler<DeviceWatcher, DeviceInformation>(async (watcher, deviceInfo) => {
                 System.Diagnostics.Debug.WriteLine("Found Device: " + deviceInfo.Name + " " + deviceInfo.Id);
+                // TODO: Hardcode intel stick name
                 Connect(deviceInfo);
             });
 
@@ -215,6 +215,11 @@ namespace SyrusLeapClient {
                 writer = null;
             }
 
+            if (reader != null) {
+                reader.DetachStream();
+                reader = null;
+            }
+
             if (service != null) {
                 service.Dispose();
                 service = null;
@@ -226,7 +231,13 @@ namespace SyrusLeapClient {
                 }
             }
 
+            if (bluetoothDevice != null) {
+                //bluetoothDevice.Close();
+                bluetoothDevice = null;
+            }
+
             System.Diagnostics.Debug.WriteLine("Disconnected from Server:" + disconnectReason);
+            OnDisconnected();
         }        
     }
 }

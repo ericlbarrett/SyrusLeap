@@ -21,7 +21,7 @@ namespace SyrusLeapCommon
         protected StreamSocket socket;
         protected DataWriter writer;
         protected DataReader reader;
-        protected BluetoothDevice bluetoothDevice;
+        protected BluetoothDevice bluetoothDevice; // Maybe we don't need this?? Move to ClientBTManager only.
         protected bool isConnected = false;
 
         public event PacketReceivedHandler PacketReceived;
@@ -31,6 +31,10 @@ namespace SyrusLeapCommon
         public abstract void Initialize();
 
         public async void SendPacket(SyrusPacket pak) {
+            if (!isConnected) {
+                throw new System.InvalidOperationException("Controller not connected");
+            }
+
             writer.WriteByte(Constants.StartCode);
 
             SendByte(pak.id);
@@ -42,7 +46,6 @@ namespace SyrusLeapCommon
                 }
             }
             
-
             writer.WriteByte(Constants.EndCode);
             await writer.StoreAsync();
         }

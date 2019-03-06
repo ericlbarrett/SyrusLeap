@@ -39,7 +39,11 @@ namespace SyrusLeapServer
             SyrusPacket pak = new SyrusPacket();
 
             pak.id = 24;
-            pak.n = 0;
+            pak.n = 3;
+            pak.data = new byte[3];
+            pak.data[0] = 24;
+            pak.data[1] = 100;
+            pak.data[2] = 17;
 
             sbm.SendPacket(pak);
         }

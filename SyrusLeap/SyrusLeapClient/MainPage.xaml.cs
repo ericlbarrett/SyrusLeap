@@ -47,7 +47,14 @@ namespace SyrusLeapClient
         }
 
         private void Recieved(SyrusPacket packet) {
-            
+            switch (packet.id) {
+                case 23: {
+                    // TODO: Update UI
+
+                    break;
+                }
+
+            }
         }
     }
 }
