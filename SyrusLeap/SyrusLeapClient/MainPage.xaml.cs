@@ -46,11 +46,13 @@ namespace SyrusLeapClient
             cbm.SendPacket(pak);
         }
 
-        private void Recieved(SyrusPacket packet) {
+        private async void Recieved(SyrusPacket packet) {
             switch (packet.id) {
-                case 23: {
-                    // TODO: Update UI
+                case 24: {
 
+                    await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>  {
+                        Text.Text = System.Text.ASCIIEncoding.ASCII.GetString(packet.data);
+                    });
                     break;
                 }
 

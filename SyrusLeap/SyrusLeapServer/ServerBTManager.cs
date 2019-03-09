@@ -110,13 +110,17 @@ namespace SyrusLeapServer {
                             packet = new SyrusPacket();
                         } else if (b == Constants.EndCode) {
                             // Check if the data matches what the packet said
-                            if (index >= 2 && packet.n == index - 2) {
+                            if (index >= 3 && packet.n == index - 3) {
                                 OnPacketReceived(packet);
                             }
                             index = -1;
                         } else if (b == Constants.EscCode) {
                             escaped = true;
                             index--;
+                            
+                        } else if (index - 3 >= packet.n) {
+                            // Error with the packet
+                            index = -1;
                         } else if (index == 1) {
                             packet.id = b;
                         } else if (index == 2) {
@@ -126,7 +130,10 @@ namespace SyrusLeapServer {
                             packet.data[index - 3] = b;
                         }
                     } else {
-                        if (index == 1) {
+                        if (index - 3 >= packet.n) {
+                            // Error with the packet
+                            index = -1;
+                        } else if (index == 1) {
                             packet.id = b;
                         } else if (index == 2) {
                             packet.n = b;

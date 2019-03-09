@@ -9,7 +9,7 @@ namespace SyrusLeapCommon
     // The packet format
     // This class gets serialized and sent over the BT connection
     public struct SyrusPacket {
-        public byte id, n;
+        public byte id, n; // Might need to allow for bigger packets eventually
         public byte[] data;
     }
 
@@ -58,15 +58,15 @@ namespace SyrusLeapCommon
         }
 
         protected void OnConnected() {
-            Connected();
+            if (Connected != null) Connected();
         }
 
         protected void OnDisconnected() {
-            Disconnected();
+            if (Disconnected != null) Disconnected();
         }
 
         protected void OnPacketReceived(SyrusPacket pak) {
-            PacketReceived(pak);
+            if (PacketReceived != null) PacketReceived(pak);
         }
     }
 }
