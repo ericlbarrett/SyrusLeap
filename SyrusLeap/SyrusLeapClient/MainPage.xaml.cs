@@ -22,9 +22,42 @@ namespace SyrusLeapClient
     /// </summary>
     public sealed partial class MainPage : Page
     {
+
+        ClientBTManager cbm;
+
         public MainPage()
         {
             this.InitializeComponent();
         }
+
+        protected override void OnNavigatedTo(NavigationEventArgs e) {
+            cbm = new ClientBTManager();
+            cbm.PacketReceived += Recieved;
+            cbm.Initialize();
+
+        }
+
+        private void SendBtn_Click(object sender, RoutedEventArgs e) {
+            SyrusPacket pak = new SyrusPacket();
+
+            pak.id = 23;
+            pak.n = 0;
+
+            cbm.SendPacket(pak);
+        }
+
+        private async void Recieved(SyrusPacket packet) {
+            switch (packet.id) {
+                case 24: {
+
+                        await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => {
+                            Text.Text = System.Text.ASCIIEncoding.ASCII.GetString(packet.data);
+                        });
+                        break;
+                    }
+
+            }
+        }
+
     }
 }
