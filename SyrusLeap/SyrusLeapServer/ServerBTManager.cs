@@ -1,5 +1,4 @@
-﻿using SyrusLeapCommon;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -81,7 +80,7 @@ namespace SyrusLeapServer {
 
             writer = new DataWriter(socket.OutputStream);
             reader = new DataReader(socket.InputStream);
-            
+
             System.Diagnostics.Debug.WriteLine("Connected to Client");
             isConnected = true;
             OnConnected();
@@ -117,7 +116,7 @@ namespace SyrusLeapServer {
                         } else if (b == Constants.EscCode) {
                             escaped = true;
                             index--;
-                            
+
                         } else if (index - 3 >= packet.n) {
                             // Error with the packet
                             index = -1;
@@ -143,7 +142,7 @@ namespace SyrusLeapServer {
                         }
                         escaped = false;
                     }
-                    
+
                     if (index >= 0) index++;
 
                 }

@@ -1,5 +1,4 @@
-﻿using SyrusLeapCommon;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -90,7 +89,7 @@ namespace SyrusLeapClient {
                 System.Diagnostics.Debug.WriteLine("Connection Status: " + bluetoothDevice.ConnectionStatus);
                 return;
             }
-            
+
             // Do various checks of the SDP record to make sure you are talking to a device that actually supports the Bluetooth Rfcomm Chat Service
             var attributes = await service.GetSdpRawAttributesAsync();
             if (!attributes.ContainsKey(Constants.SdpServiceNameAttributeId)) {
@@ -114,9 +113,10 @@ namespace SyrusLeapClient {
 
             lock (this) {
                 socket = new StreamSocket();
-            } try {
+            }
+            try {
                 await socket.ConnectAsync(service.ConnectionHostName, service.ConnectionServiceName);
-                
+
                 writer = new DataWriter(socket.OutputStream);
                 reader = new DataReader(socket.InputStream);
 
@@ -160,7 +160,7 @@ namespace SyrusLeapClient {
                         } else if (b == Constants.EscCode) {
                             escaped = true;
                             index--;
-                            
+
                         } else if (index - 3 >= packet.n) {
                             // Error with the packet
                             index = -1;
@@ -186,7 +186,7 @@ namespace SyrusLeapClient {
                         }
                         escaped = false;
                     }
-                    
+
                     if (index >= 0) index++;
 
                 } catch (Exception ex) {
@@ -206,7 +206,7 @@ namespace SyrusLeapClient {
             }
         }
 
-        private void StopWatcher(){
+        private void StopWatcher() {
             if (deviceWatcher != null) {
                 if (deviceWatcher.Status == DeviceWatcherStatus.Started ||
                      deviceWatcher.Status == DeviceWatcherStatus.EnumerationCompleted) {
@@ -247,6 +247,6 @@ namespace SyrusLeapClient {
 
             System.Diagnostics.Debug.WriteLine("Disconnected from Server:" + disconnectReason);
             OnDisconnected();
-        }        
+        }
     }
 }

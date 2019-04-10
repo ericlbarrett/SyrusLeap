@@ -3,8 +3,7 @@ using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
 using Windows.Devices.Bluetooth;
 
-namespace SyrusLeapCommon
-{
+namespace SyrusLeapClient {
 
     // The packet format
     // This class gets serialized and sent over the BT connection
@@ -45,7 +44,7 @@ namespace SyrusLeapCommon
                     SendByte(b);
                 }
             }
-            
+
             writer.WriteByte(Constants.EndCode);
             await writer.StoreAsync();
         }
