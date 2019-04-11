@@ -35,7 +35,7 @@ namespace SyrusLeapServer {
             lpm = new LeapManager();
             lpm.Initialize();
 
-            timer = new Timer(50 / 3);
+            timer = new Timer(1000 / 30);
             timer.Elapsed += new ElapsedEventHandler(SendFrame);
             timer.Start();
         }
@@ -64,6 +64,8 @@ namespace SyrusLeapServer {
 
             pak.data = System.Text.Encoding.ASCII.GetBytes(TextBox.Text);
             pak.n = (byte)pak.data.Length;
+
+            System.Diagnostics.Debug.WriteLine("Send msg: " + TextBox.Text);
 
             sbm.SendPacket(pak);
         }
