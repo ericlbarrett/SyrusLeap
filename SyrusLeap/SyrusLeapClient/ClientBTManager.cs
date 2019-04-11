@@ -11,7 +11,7 @@ using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
 
 namespace SyrusLeapClient {
-    class ClientBTManager : BTManager {
+    public class ClientBTManager : BTManager {
 
         private DeviceWatcher deviceWatcher = null; // DeviceWatcher to find the server
         private RfcommDeviceService service = null; // The service that communication happens on
