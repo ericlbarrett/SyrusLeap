@@ -35,7 +35,9 @@ namespace SyrusLeapClient {
             deviceWatcher.Added += new TypedEventHandler<DeviceWatcher, DeviceInformation>(async (watcher, deviceInfo) => {
                 System.Diagnostics.Debug.WriteLine("Found Device: " + deviceInfo.Name + " " + deviceInfo.Id);
                 // TODO: Hardcode intel stick name
-                Connect(deviceInfo);
+                if (deviceInfo.Name.StartsWith("DESKTOP")) {
+                    Connect(deviceInfo);
+                }
             });
 
             deviceWatcher.EnumerationCompleted += new TypedEventHandler<DeviceWatcher, Object>(async (watcher, obj) => {
@@ -61,7 +63,7 @@ namespace SyrusLeapClient {
             if (accessStatus != DeviceAccessStatus.Allowed) {
                 System.Diagnostics.Debug.WriteLine("Access State: " + accessStatus);
                 System.Diagnostics.Debug.WriteLine("This app does not have access to connect to the remote device (please grant access in Settings > Privacy > Other Devices");
-                return;
+                //return;
             }
 
             // TODO: Maybe automatic pairing?

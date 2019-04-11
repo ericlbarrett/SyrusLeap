@@ -58,7 +58,6 @@ namespace SyrusLeapClient
 
                 case 20:
                     {
-                        System.Diagnostics.Debug.WriteLine("test");
                         float x = BitConverter.ToSingle(packet.data, 0);
                         float y = BitConverter.ToSingle(packet.data, 4);
                         float z = BitConverter.ToSingle(packet.data, 8);
