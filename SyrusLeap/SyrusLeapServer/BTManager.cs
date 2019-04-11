@@ -56,6 +56,10 @@ namespace SyrusLeapServer {
             writer.WriteByte(b);
         }
 
+        public bool GetConnectedStatus() {
+            return isConnected;
+        }
+
         protected void OnConnected() {
             if (Connected != null) Connected();
         }
