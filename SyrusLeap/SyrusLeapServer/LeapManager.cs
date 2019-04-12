@@ -39,7 +39,7 @@ namespace SyrusLeapServer {
         }
 
         public byte[] getFrameInfo() {
-            byte[] ret = new byte[24];
+            byte[] ret = new byte[108];
 
 
             Frame frame = controller.Frame();
@@ -52,13 +52,16 @@ namespace SyrusLeapServer {
             if (left != null) {
                 ToBytes(left.PalmPosition, ret, 0);
                 ToBytes(left.PalmNormal, ret, 12);
-                foreach (Finger finger in left.Fingers) {
+                for (int i = 0; i < 5; i++) {
+                    if (left.Fingers[i] != null) {
+                        ToBytes(left.Fingers[i].TipPosition, ret, 24 + 12 * i);
+                    }
                 }
 
             }
             if (right != null) {
-                ToBytes(right.PalmPosition, ret, 24);
-                ToBytes(right.PalmNormal, ret, 36);
+                ToBytes(right.PalmPosition, ret, 84);
+                ToBytes(right.PalmNormal, ret, 96);
             }
 
             return ret;
