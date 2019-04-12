@@ -14,6 +14,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using System.Reflection;
 
 namespace SyrusLeapServer {
     /// <summary>
@@ -38,6 +39,17 @@ namespace SyrusLeapServer {
             timer = new Timer(1000 / 30);
             timer.Elapsed += new ElapsedEventHandler(SendFrame);
             timer.Start();
+
+            try {
+                Microsoft.Win32.RegistryKey key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+                Assembly curAssembly = Assembly.GetExecutingAssembly();
+                if (key.GetValue(curAssembly.GetName().Name) != null) {
+                    Startup.IsChecked = true;
+                } else {
+                    Startup.IsChecked = false;
+                }
+            } catch { }
+
         }
 
         private void SendFrame(object source, ElapsedEventArgs e) {
@@ -68,6 +80,25 @@ namespace SyrusLeapServer {
             System.Diagnostics.Debug.WriteLine("Send msg: " + TextBox.Text);
 
             sbm.SendPacket(pak);
+        }
+
+        private void Startup_Checked(object sender, RoutedEventArgs e) {
+            try {
+                Microsoft.Win32.RegistryKey key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+                Assembly curAssembly = Assembly.GetExecutingAssembly();
+                //System.Diagnostics.Debug.WriteLine(curAssembly.Location);
+                key.SetValue(curAssembly.GetName().Name, curAssembly.Location);
+            } catch { }
+        }
+
+        private void Startup_Unchecked(object sender, RoutedEventArgs e) {
+            try {
+                Microsoft.Win32.RegistryKey key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+                Assembly curAssembly = Assembly.GetExecutingAssembly();
+                if (key.GetValue(curAssembly.GetName().Name) != null) {
+                    key.DeleteValue(curAssembly.GetName().Name);
+                }
+            } catch { }
         }
     }
 }

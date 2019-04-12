@@ -49,10 +49,12 @@ namespace SyrusLeapServer {
                 if (hand.IsRight) right = hand;
             }
 
-
             if (left != null) {
                 ToBytes(left.PalmPosition, ret, 0);
                 ToBytes(left.PalmNormal, ret, 12);
+                foreach (Finger finger in left.Fingers) {
+                }
+
             }
             if (right != null) {
                 ToBytes(right.PalmPosition, ret, 24);
