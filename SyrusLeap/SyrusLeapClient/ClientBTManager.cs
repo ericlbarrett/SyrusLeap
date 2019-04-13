@@ -138,14 +138,14 @@ namespace SyrusLeapClient {
             bool escaped = false;
             int index = -1;
             SyrusPacket packet = new SyrusPacket();
-            //reader.InputStreamOptions = InputStreamOptions.ReadAhead;
+            reader.InputStreamOptions = InputStreamOptions.ReadAhead;
 
             while (true) {
                 try {
                     uint size = await reader.LoadAsync(12 * sizeof(byte));
                     if (size < 12 * sizeof(byte)) {
-                        Disconnect("Remote device terminated connection - make sure only one instance of server is running on remote device");
-                        return;
+                        //Disconnect("Remote device terminated connection - make sure only one instance of server is running on remote device");
+                        //return;
                     }
 
 

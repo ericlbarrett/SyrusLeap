@@ -36,7 +36,7 @@ namespace SyrusLeapServer {
             lpm = new LeapManager();
             lpm.Initialize();
 
-            timer = new Timer(1000 / 30);
+            timer = new Timer(1000 / 60);
             timer.Elapsed += new ElapsedEventHandler(SendFrame);
             timer.Start();
 
