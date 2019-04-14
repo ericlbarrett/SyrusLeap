@@ -8,11 +8,16 @@ using System.Threading.Tasks;
 using Leap;
 
 namespace SyrusLeapServer {
+
+    delegate void GestureEvent(Frame frame);
+
     class LeapManager : ILeapEventDelegate {
         //intitialized controller
         private Controller controller;
         //intitialized the listener
         private LeapEventListener listener;
+
+        public event GestureEvent OnGesture;
 
         public void Initialize() {
             //new controller object
@@ -32,7 +37,7 @@ namespace SyrusLeapServer {
             }
         }
 
-        private void ToBytes(Leap.Vector value, byte[] array, int offset) {
+        public void ToBytes(Leap.Vector value, byte[] array, int offset) {
             ToBytes(value.x, array, offset);
             ToBytes(value.y, array, offset + 4);
             ToBytes(value.z, array, offset + 8);
@@ -93,14 +98,15 @@ namespace SyrusLeapServer {
                         connectHandler();
                         break;
                     case "onFrame":
-                        //on each frame it will do the following methods
+                    //on each frame it will do the following methods
 
-                        //method to detect gestures 
-                        detectGesture(this.controller.Frame());
+                    //method to detect gestures 
+                    if (OnGesture != null) OnGesture(this.controller.Frame());
+                        //detectGesture(this.controller.Frame());
                         //method to detect the XYZ of the palm of each hand
-                        detectPalmPosition(this.controller.Frame());
+                        //detectPalmPosition(this.controller.Frame());
                         //detect the finger position of the hand for each finger
-                        detectFingerPosition(this.controller.Frame());
+                        //detectFingerPosition(this.controller.Frame());
                         break;
                 }
             //} else {

@@ -15,6 +15,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Reflection;
+using Leap;
 
 namespace SyrusLeapServer {
     /// <summary>
@@ -34,6 +35,7 @@ namespace SyrusLeapServer {
             sbm.Initialize();
 
             lpm = new LeapManager();
+            lpm.OnGesture += GestureHappened;
             lpm.Initialize();
 
             timer = new Timer(1000 / 60);
@@ -68,6 +70,26 @@ namespace SyrusLeapServer {
 
                 sbm.SendPacket(pak);
             }
+        }
+
+        private void GestureHappened(Leap.Frame frame) {
+            foreach (Gesture gesture in frame.Gestures()) {
+                if (gesture.Type == Gesture.GestureType.TYPE_SCREEN_TAP) {
+                    ScreenTapGesture screentapGesture = new ScreenTapGesture(gesture);
+                    SyrusPacket pak = new SyrusPacket();
+                    pak.id = 21;
+                    pak.data = new byte[24];
+
+                    lpm.ToBytes(screentapGesture.Position, pak.data, 0);
+                    lpm.ToBytes(screentapGesture.Direction, pak.data, 12);
+
+                    pak.n = (byte)pak.data.Length;
+                    sbm.SendPacket(pak);
+                }
+
+
+            }
+
         }
 
         private void SendBtn_Click(object sender, RoutedEventArgs e) {
