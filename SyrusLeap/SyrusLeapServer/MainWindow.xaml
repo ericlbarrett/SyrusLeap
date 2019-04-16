@@ -5,12 +5,17 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SyrusLeapServer"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="SyrusLeapServer" Height="450" Width="800">
     <Grid>
-        <Button x:Name="SendBtn" Content="Send Message" HorizontalAlignment="Left" Margin="221,83,0,0" VerticalAlignment="Top" Width="87" Click="SendBtn_Click"/>
-        <TextBox x:Name="TextBox" HorizontalAlignment="Left" Height="23" Margin="96,83,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120"/>
-        <TextBlock x:Name="Text" HorizontalAlignment="Left" Margin="340,83,0,0" TextWrapping="Wrap" Text="TextBlock" VerticalAlignment="Top" Height="61" Width="213"/>
-        <CheckBox x:Name="Startup" Content="Start with Windows?" HorizontalAlignment="Left" Margin="88,132,0,0" VerticalAlignment="Top" Checked="Startup_Checked" Unchecked="Startup_Unchecked"/>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="88*"/>
+            <ColumnDefinition Width="707*"/>
+        </Grid.ColumnDefinitions>
+        <Button x:Name="SendBtn" Content="Send Message" HorizontalAlignment="Left" Margin="132.6,83,0,0" VerticalAlignment="Top" Width="87" Click="SendBtn_Click" Grid.Column="1"/>
+        <TextBox x:Name="TextBox" HorizontalAlignment="Left" Height="23" Margin="7.6,83,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" Grid.Column="1"/>
+        <TextBlock x:Name="Text" HorizontalAlignment="Left" Margin="251.6,83,0,0" TextWrapping="Wrap" Text="TextBlock" VerticalAlignment="Top" Height="61" Width="213" Grid.Column="1"/>
+        <CheckBox x:Name="Startup" Content="Start with Windows?" HorizontalAlignment="Left" Margin="88,132,0,0" VerticalAlignment="Top" Checked="Startup_Checked" Unchecked="Startup_Unchecked" Grid.ColumnSpan="2"/>
+        <TextBlock x:Name="StatusIndicator" HorizontalAlignment="Left" Margin="7.6,44,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Text="Status: Disconnected" Grid.Column="1"/>
 
     </Grid>
 </Window>

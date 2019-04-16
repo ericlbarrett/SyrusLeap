@@ -111,7 +111,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>xcopy /yr "C:\Users\stent\Downloads\Leap_Motion_SDK_Windows_2.3.1\LeapDeveloperKit_2.3.1+31549_win\LeapSDK\lib\x86\Leap.dll" "$(TargetDir)"
-xcopy /yr "C:\Users\stent\Downloads\Leap_Motion_SDK_Windows_2.3.1\LeapDeveloperKit_2.3.1+31549_win\LeapSDK\lib\x86\LeapCSharp.dll" "$(TargetDir)"</PostBuildEvent>
+    <PostBuildEvent>xcopy /yr "C:\Users\NASA\Downloads\Leap_Motion_SDK_Windows_2.3.1\LeapDeveloperKit_2.3.1+31549_win\LeapSDK\lib\x86\Leap.dll" "$(TargetDir)"
+xcopy /yr "C:\Users\NASA\Downloads\Leap_Motion_SDK_Windows_2.3.1\LeapDeveloperKit_2.3.1+31549_win\LeapSDK\lib\x86\LeapCSharp.dll" "$(TargetDir)"</PostBuildEvent>
   </PropertyGroup>
 </Project>

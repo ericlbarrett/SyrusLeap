@@ -30,9 +30,12 @@ namespace SyrusLeapServer {
 
         public MainWindow() {
             InitializeComponent();
-     
+
             sbm = new ServerBTManager();
+            sbm.Connected += OnConnect;
+            sbm.Disconnected += OnDisconnected;
             sbm.Initialize();
+
 
             lpm = new LeapManager();
             lpm.OnGesture += GestureHappened;
@@ -85,6 +88,18 @@ namespace SyrusLeapServer {
 
                     pak.n = (byte)pak.data.Length;
                     sbm.SendPacket(pak);
+                } else if (gesture.Type == Gesture.GestureType.TYPE_SWIPE) {
+                    SwipeGesture swipeGesture = new SwipeGesture(gesture);
+                    SyrusPacket pak = new SyrusPacket();
+                    pak.id = 22;
+                    pak.data = new byte[24];
+
+                    lpm.ToBytes(swipeGesture.Position, pak.data, 0);
+                    lpm.ToBytes(swipeGesture.Direction, pak.data, 12);
+
+                    pak.n = (byte)pak.data.Length;
+                    sbm.SendPacket(pak);
+
                 }
 
 
@@ -102,6 +117,20 @@ namespace SyrusLeapServer {
             System.Diagnostics.Debug.WriteLine("Send msg: " + TextBox.Text);
 
             sbm.SendPacket(pak);
+        }
+
+        private void OnConnect()
+        {
+            Dispatcher.BeginInvoke(new Action(() => {
+                StatusIndicator.Text = "Status: Connected";
+            }), DispatcherPriority.SystemIdle);
+        }
+
+        private void OnDisconnected()
+        {
+            Dispatcher.BeginInvoke(new Action(() => {
+                StatusIndicator.Text = "Status: Disconnected";
+            }), DispatcherPriority.SystemIdle);
         }
 
         private void Startup_Checked(object sender, RoutedEventArgs e) {

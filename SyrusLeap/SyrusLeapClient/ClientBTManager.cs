@@ -151,7 +151,7 @@ namespace SyrusLeapClient {
 
                     byte[] bt = new byte[size];
                     reader.ReadBytes(bt);
-                    for (int i = 0; i < 12; i++) {
+                    for (int i = 0; i < size; i++) {
                         byte b = bt[i];
                         if (!escaped) {
                             if (b == Constants.StartCode) {
